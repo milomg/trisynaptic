@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Hello!</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      body {
+        font-family: helvetica, arial, sans-serif;
+        margin: 2em;
+      }
+
+      h1 {
+        font-style: italic;
+        color: #373fff;
+      }
+
+      canvas {
+        border: 1px solid black;
+      }
+    </style>
+
+    <script src="/script.min.js" defer></script>
+  </head>
+  <body>
+    <p>
+      This is the new current based neuron simulation. It attempts to mimic the
+      neurons in the brain using the standard integrate and fire model (with
+      constants modeled after the real world).
+    </p>
+    <p>
+      click to create a new neuron<br />
+      shift click to create an inhibitory neuron<br />
+      delete to delete a current neuron and all its connections<br />
+      space to switch the graphed neuron<br />
+      esc to unselect<br />
+      right click to activate a neuron
+    </p>
+
+    <div style="display: flex; flex-wrap: wrap;">
+      <canvas id="c"></canvas>
+
+      <div id="sidebar" class="hidden">
+        Saved graph code: <textarea id="init_graph" value=""></textarea>
+        <h1>Neuron Info</h1>
+        Voltage graph: <canvas id="c2" width="200" height="160"></canvas><br />
+
+        Threshold: <input id="threshold" value="1" />
+      </div>
+    </div>
+  </body>
+</html>
