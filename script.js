@@ -2,16 +2,19 @@ import Stats from "stats.js";
 
 var stats = new Stats();
 stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
+stats.dom.style.bottom = 0;
+stats.dom.style.top = null;
 document.body.appendChild(stats.dom);
 
 const c = document.querySelector("#c");
 const ctx = c.getContext("2d");
-
-c.style.width = "500px";
-c.style.height = "500px";
+let w = window.innerWidth - 240;
+let h = window.innerHeight - 40;
+c.style.width = w + "px";
+c.style.height = h + "px";
 const scale = window.devicePixelRatio;
-c.width = Math.ceil(500 * scale);
-c.height = Math.ceil(500 * scale);
+c.width = Math.ceil(w * scale);
+c.height = Math.ceil(h * scale);
 ctx.scale(scale, scale);
 
 const c2 = document.querySelector("#c2");
@@ -228,7 +231,8 @@ function tick(t) {
 
   signals.forEach((s) => s.tick(scaleddt));
 
-  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = "#e5e5e5";
+  ctx.fillRect(0, 0, c.width, c.height);
 
   neurons.forEach((n) => n.drawArrows());
   neurons.forEach((n) => n.draw());
@@ -408,7 +412,6 @@ window.addEventListener("mousemove", (e) => {
     active.x = x;
     active.y = y;
   }
-  console.log("mousemove");
 });
 window.addEventListener("mouseup", (e) => {
   down = false;
@@ -543,4 +546,27 @@ threshold_in.onchange = () => {
 };
 graph_in.onchange = () => {
   quickDecode(graph_in.value);
+};
+window.onresize = () => {
+  w = window.innerWidth - 240;
+  h = window.innerHeight - 40;
+  c.style.width = w + "px";
+  c.style.height = h + "px";
+  c.width = Math.ceil(w * scale);
+  c.height = Math.ceil(h * scale);
+  ctx.scale(scale, scale);
+};
+let modal = document.querySelector(".modal");
+let help = document.querySelector("#help");
+let span = document.querySelector(".close");
+help.onclick = () => {
+  modal.style.display = "block";
+};
+span.onclick = () => {
+  modal.style.display = "none";
+};
+window.onclick = (event) => {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
 };

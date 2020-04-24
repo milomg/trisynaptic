@@ -17,9 +17,8 @@ function copy() {
   if (watching2) return;
   watching2 = true;
 
-  fs.copyFile("index.html", "dist/index.html", () => {
-    console.log("Wrote to dist/index.html");
-  });
+  fs.copyFileSync("index.html", "dist/index.html");
+  console.log("Wrote to dist/index.html");
 
   setTimeout(() => {
     watching2 = false;

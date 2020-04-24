@@ -9,46 +9,125 @@
     <style>
       body {
         font-family: helvetica, arial, sans-serif;
-        margin: 2em;
+        margin: 0;
+        padding: 0;
+      }
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        padding-top: 100px;
+        background: rgba(0, 0, 0, 0.25);
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+      }
+      .modal-body {
+        background-color: #fefefe;
+        position: relative;
+        margin: auto;
+        padding: 20px;
+        border-radius: 20px;
+        max-width: 900px;
+      }
+      .close {
+        color: #aaaaaa;
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        text-decoration: none;
+        cursor: pointer;
       }
 
-      h1 {
-        font-style: italic;
-        color: #373fff;
+      .close:hover,
+      .close:focus {
+        color: #000;
       }
-
-      canvas {
-        border: 1px solid black;
+      #help {
+        border-radius: 100%;
+        width: 36px;
+        height: 36px;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #2c2c2c;
+        color: white;
+        text-align: center;
+        line-height: 36px;
+        cursor: pointer;
+      }
+      .toolbar {
+        height: 40px;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: #2c2c2c;
+      }
+      .toolbar a {
+        display: block;
+        float: left;
+        padding: 10px 10px;
+        font-size: 15px;
+      }
+      .toolbar a:hover {
+        background: #000;
+        color: white;
+      }
+      .toolbar a.selected {
+        background: #18a0fb;
+        color: white;
+      }
+      #sidebar {
+        float: right;
+        width: 224px;
+        height: calc(100vh - 56px);
+        padding: 8px;
       }
     </style>
 
     <script src="/script.min.js" defer></script>
   </head>
   <body>
-    <p>
-      This is the new current based neuron simulation. It attempts to mimic the
-      neurons in the brain using the standard integrate and fire model (with
-      constants modeled after the real world).
-    </p>
-    <p>
-      click to create a new neuron<br />
-      shift click to create an inhibitory neuron<br />
-      delete to delete a current neuron and all its connections<br />
-      space to switch the graphed neuron<br />
-      esc to unselect<br />
-      right click to activate a neuron
-    </p>
-
-    <div style="display: flex; flex-wrap: wrap;">
-      <canvas id="c"></canvas>
-
-      <div id="sidebar" class="hidden">
-        Saved graph code: <textarea id="init_graph" value=""></textarea>
-        <h1>Neuron Info</h1>
-        Voltage graph: <canvas id="c2" width="200" height="160"></canvas><br />
-
-        Threshold: <input id="threshold" value="1" />
+    <div class="modal">
+      <div class="modal-body">
+        <span class="close">&times;</span>
+        <h1>Trisynaptic</h1>
+        <p>
+          We use leaky integratate and fire neurons to emulate the neurons in
+          the brain (with constants modeled after the real world).
+        </p>
+        <p>
+          click to create a new neuron<br />
+          shift click to create an inhibitory neuron<br />
+          delete to delete a current neuron and all its connections<br />
+          space to switch the graphed neuron<br />
+          esc to unselect<br />
+          right click to activate a neuron
+        </p>
+        <p>
+          If someone sent you a "graph code", put it here:
+        </p>
+        <textarea id="init_graph" value=""></textarea>
       </div>
     </div>
+    <div class="toolbar">
+      <a class="selected">🔵</a>
+      <a>🔴</a>
+    </div>
+    <canvas id="c"></canvas>
+
+    <div id="sidebar">
+      <h1>Neuron Info</h1>
+      <hr>
+      <p>Voltage graph:</p>
+      <canvas id="c2" width="200" height="160"></canvas><br />
+      <hr>
+      <p>Threshold:</p>
+      <input id="threshold" value="1" />
+    </div>
+
+    <div id="help">?</div>
   </body>
 </html>
