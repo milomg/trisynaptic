@@ -26,20 +26,20 @@ c2.width = Math.ceil(80 * scale);
 c2.height = Math.ceil(48 * scale);
 ctx2.scale(scale, scale);
 
-const restingPotential = -70.0e-3; //mV
-const threshold = -55.0e-3; //mV
-const resetVoltage = -80.0e-3; //mV
+const restingPotential = -70.0e-3; // mV
+const threshold = -55.0e-3; // mV
+const resetVoltage = -80.0e-3; // mV
 
-const capacitance = 0.2e-9; //nF
-const resistance = 100.0e6; //MΩ
+const capacitance = 0.2e-9; // nF
+const resistance = 100.0e6; // MΩ
 
-const timeConstant = 2.0e-3; //ms
+const timeConstant = 2.0e-3; // ms
 
-const maxCurrent = 3.0e-9; //nA
+const maxCurrent = 3.0e-9; // nA
 
-const delay = 5e-3; //ms
+const delay = 5e-3; // ms
 
-const refractoryPeriod = 2.0e-3; //ms;
+const refractoryPeriod = 2.0e-3; // ms;
 
 const radius = 8;
 const box = 15;
@@ -115,16 +115,16 @@ class Signal {
 
 class Neuron {
   constructor(x, y, sign = 1.0, in_id = -1) {
-    this.x = x; //input
-    this.y = y; //input
+    this.x = x; // input
+    this.y = y; // input
     if (in_id == -1) {
       this.id = id;
       id++;
-    } else this.id = in_id; //input
+    } else this.id = in_id; // input
 
     this.voltage = resetVoltage;
-    this.inputs = []; //input (synapse)
-    this.outputs = []; //input (synapse, neuron)
+    this.inputs = []; // input (synapse)
+    this.outputs = []; // input (synapse, neuron)
     this.lastFire = Infinity;
     this.exponential = 0.0;
     this.fired = true;
@@ -175,7 +175,7 @@ class Neuron {
     }
     this.lastFire += dt;
 
-    //this.voltage = this.threshold+0.01; //constant output
+    // this.voltage = this.threshold+0.01; // constant output
   }
   drawArrows() {
     ctx.lineWidth = 1;
@@ -335,10 +335,10 @@ c.addEventListener("mousedown", (e) => {
     (n) => n.x < x + box && n.x > x - box && n.y < y + box && n.y > y - box
   );
 
+  // clicks on neuron
   if (below) {
-    //clicks on neuron
+    // initiate signal with right click
     if (e.button == 2) {
-      //initiate signal with right click
       if (below.lastFire > delay) {
         below.fired = false;
         below.lastFire = 0.0;
@@ -347,20 +347,20 @@ c.addEventListener("mousedown", (e) => {
       }
     } else {
       if (active != null && !(active instanceof Synapse)) {
+        // select neuron and make connection
         if (below != active) {
-          //select neuron and make connection
           below.inputs.push(new Synapse(active, below));
           active.outputs.push(below);
         }
         active = null;
       } else {
-        //select active neuron
+        // select active neuron
         down = true;
         active = below;
       }
     }
   } else {
-    //not to existing neuron
+    // not to existing neuron
     let belowEdge;
     neurons.find((n) => {
       let out = n.inputs.find(
@@ -373,7 +373,7 @@ c.addEventListener("mousedown", (e) => {
       return out;
     });
     if (belowEdge) {
-      //neuromodulation
+      // neuromodulation
       if (
         active &&
         neuromodulation &&
@@ -387,7 +387,7 @@ c.addEventListener("mousedown", (e) => {
         active = belowEdge;
       }
     } else {
-      //new neuron
+      // new neuron
       let n = new Neuron(x, y, e.shiftKey ? -1 : 1);
       neurons.push(n);
       if (active && !(active instanceof Synapse)) {
@@ -461,7 +461,7 @@ window.addEventListener("keydown", (e) => {
         (graphFocus.threshold - restingPotential) /
         (threshold - restingPotential);
       ctx2.clearRect(0, 0, 40, 80);
-      //console.log(graphFocus);
+      // console.log(graphFocus);
       console.log(quickEncode());
     }
   }
