@@ -389,7 +389,7 @@ c.addEventListener("mousedown", (e) => {
     // user clicked on empty space empty, so create a new neuron
     let n = new Neuron(x, y, defaultSign == 1 ? (e.shiftKey ? -1 : 1) : -1);
     neurons.push(n);
-    if (active && !(active instanceof Synapse)) {
+    if (active && drawingEdge && !(active instanceof Synapse)) {
       n.inputs.push(new Synapse(active, n));
       active.outputs.push(n);
     }
