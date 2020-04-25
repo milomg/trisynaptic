@@ -385,7 +385,7 @@ c.addEventListener("mousedown", (e) => {
     } else {
       setActive(below);
     }
-  } else if (drawingEdge) {
+  } else {
     // user clicked on empty space empty, so create a new neuron
     let n = new Neuron(x, y, defaultSign == 1 ? (e.shiftKey ? -1 : 1) : -1);
     neurons.push(n);
