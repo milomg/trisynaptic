@@ -5,12 +5,16 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
     <style>
       body {
-        font-family: helvetica, arial, sans-serif;
+        font-family: Inter, sans-serif;
+        font-size: 15px;
         margin: 0;
         padding: 0;
+      }
+      h1 {
+        font-weight: normal;
       }
       .modal {
         position: fixed;
@@ -86,9 +90,36 @@
         height: calc(100vh - 56px);
         padding: 8px;
       }
+      hr {
+        height: 1px;
+        border: none;
+        background: #e5e5e5;
+      }
+      code {
+        padding: 0.2em 0.4em;
+        margin: 0;
+        font-size: 85%;
+        background-color: rgba(27, 31, 35, 0.05);
+        border-radius: 3px;
+        font-family: Consolas, monospace;
+      }
+      input {
+        outline: none;
+        border: 1px solid white;
+        padding: 4px;
+        margin: 1px;
+        width: 40px;
+      }
+      input:hover {
+        border: 1px solid #e5e5e5;
+      }
+      input:focus {
+        border: 2px solid #18a0fb;
+        margin: 0px;
+      }
     </style>
 
-    <script src="/script.min.js" defer></script>
+    <script src="/script.js" defer></script>
   </head>
   <body>
     <div class="modal">
@@ -100,17 +131,17 @@
           the brain (with constants modeled after the real world).
         </p>
         <p>
-          click to create a new neuron<br />
-          shift click to create an inhibitory neuron<br />
-          delete to delete a current neuron and all its connections<br />
-          space to switch the graphed neuron<br />
-          esc to unselect<br />
-          right click to activate a neuron
+          <code>click</code> to create a new neuron<br />
+          <code>shift+click</code> to create an inhibitory neuron<br />
+          <code>alt+click</code> to start a new connection<br />
+          <code>delete</code> to delete the current neuron<br />
+          <code>esc</code> to deselect<br />
+          <code>right click</code> to excite a neuron
         </p>
         <p>
           If someone sent you a "graph code", put it here:
         </p>
-        <textarea id="init_graph" value=""></textarea>
+        <textarea id="init-graph" value=""></textarea>
       </div>
     </div>
     <div class="toolbar">
@@ -122,11 +153,16 @@
     <div id="sidebar">
       <h1>Neuron Info</h1>
       <hr />
-      <p>Voltage graph:</p>
-      <canvas id="c2" width="200" height="160"></canvas><br />
+      <label>
+        Threshold:
+        <input id="threshold" value="1" type="number" min="1" max="10" />
+      </label>
+      <br />
+      <label>
+        Graphed:
+        <input type="checkbox" id="graph-toggle" />
+      </label>
       <hr />
-      <p>Threshold:</p>
-      <input id="threshold" value="1" />
     </div>
 
     <div id="help">?</div>

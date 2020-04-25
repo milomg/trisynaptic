@@ -17,15 +17,6 @@ c.width = Math.ceil(w * scale);
 c.height = Math.ceil(h * scale);
 ctx.scale(scale, scale);
 
-const c2 = document.querySelector("#c2");
-const ctx2 = c2.getContext("2d");
-
-c2.style.width = "80px";
-c2.style.height = "48px";
-c2.width = Math.ceil(80 * scale);
-c2.height = Math.ceil(48 * scale);
-ctx2.scale(scale, scale);
-
 const restingPotential = -70.0e-3; // mV
 const threshold = -55.0e-3; // mV
 const resetVoltage = -80.0e-3; // mV
@@ -41,11 +32,13 @@ const delay = 5e-3; // ms
 
 const refractoryPeriod = 2.0e-3; // ms;
 
-const radius = 8;
-const box = 15;
+const radius = 12;
+const box = 20;
 
 let signals = [];
 let id = 0;
+
+let defaultSign = 1;
 
 let neuromodulation = true;
 let hebbian = false;
@@ -55,8 +48,8 @@ function drawArrow(fromx, fromy, tox, toy) {
   const dx = tox - fromx;
   const dy = toy - fromy;
   const len = Math.sqrt(dx ** 2 + dy ** 2);
-  const subx = (dx / len) * 15;
-  const suby = (dy / len) * 15;
+  const subx = (dx / len) * box;
+  const suby = (dy / len) * box;
   const angle = Math.atan2(dy, dx);
   ctx.beginPath();
   ctx.moveTo(fromx + subx, fromy + suby);
@@ -73,14 +66,14 @@ function drawArrow(fromx, fromy, tox, toy) {
   ctx.stroke();
 }
 class Synapse {
-  constructor(start, end, in_id = -1) {
+  constructor(start, end, inId = -1) {
     this.start = start;
     this.end = end;
     this.maxCurrent = maxCurrent;
-    if (in_id == -1) {
+    if (inId == -1) {
       this.id = id;
       id++;
-    } else this.id = in_id;
+    } else this.id = inId;
   }
   value() {
     return this.start.exponential * this.start.sign * this.maxCurrent;
@@ -114,13 +107,13 @@ class Signal {
 }
 
 class Neuron {
-  constructor(x, y, sign = 1.0, in_id = -1) {
+  constructor(x, y, sign = defaultSign, inId = -1) {
     this.x = x; // input
     this.y = y; // input
-    if (in_id == -1) {
+    if (inId == -1) {
       this.id = id;
       id++;
-    } else this.id = in_id; // input
+    } else this.id = inId; // input
 
     this.voltage = resetVoltage;
     this.inputs = []; // input (synapse)
@@ -130,6 +123,51 @@ class Neuron {
     this.fired = true;
     this.sign = sign;
     this.threshold = threshold;
+    this.canvas = null;
+    this.graph = null;
+    this.lasty = 48;
+  }
+  createGraph() {
+    this.canvas = document.createElement("canvas");
+    this.graph = this.canvas.getContext("2d");
+
+    this.canvas.style.width = "80px";
+    this.canvas.style.height = "48px";
+    this.canvas.width = Math.ceil(80 * scale);
+    this.canvas.height = Math.ceil(48 * scale);
+    this.graph.scale(scale, scale);
+    this.graph.fillStyle = "white";
+    this.graph.fillRect(0, 0, 80, 48);
+  }
+  deleteGraph() {
+    this.graph = null;
+    this.canvas = null;
+  }
+  updateGraph(dt) {
+    if (!this.graph) return;
+    this.graph.scale(1 / scale, 1 / scale);
+    this.graph.drawImage(this.canvas, -1, 0);
+    this.graph.scale(scale, scale);
+
+    this.graph.fillStyle = "white";
+
+    this.graph.fillRect(80 - 1, 0, 2, 48);
+
+    this.graph.strokeStyle = "#18a0fb";
+
+    this.graph.lineWidth = 2;
+    this.graph.beginPath();
+    this.graph.moveTo(80 - 1, this.lasty);
+    let newy = (this.voltage / resetVoltage) * 48;
+    if (this.lastFire == dt) newy = 0;
+    this.graph.lineTo(80, newy);
+
+    this.lasty = newy;
+    this.graph.stroke();
+  }
+  drawGraph() {
+    if (!this.canvas) return;
+    ctx.drawImage(this.canvas, this.x - 40, this.y - box - 58);
   }
   leak() {
     return (-1.0 / resistance) * (this.voltage - restingPotential);
@@ -174,11 +212,11 @@ class Neuron {
       this.voltage += dv;
     }
     this.lastFire += dt;
-
+    this.updateGraph(dt);
     // this.voltage = this.threshold+0.01; // constant output
   }
   drawArrows() {
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.strokeStyle = this.sign > 0 ? "#6bafd6" : "#d66b88";
     this.outputs.forEach((n) => {
       drawArrow(this.x, this.y, n.x, n.y);
@@ -192,7 +230,7 @@ class Neuron {
     let i = this.sign > 0;
     ctx.fillStyle = "rgb(" + (i ? 0 : b) + ",0," + (i ? b : 0) + ")";
     ctx.strokeStyle = i ? "#6bafd6" : "#d66b88";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.arc(this.x, this.y, radius, 0, 2 * Math.PI);
     ctx.fill();
@@ -205,17 +243,14 @@ let timeScale = 0.01;
 let neurons = [];
 
 let neuron1 = new Neuron(50, 50);
-let neuron2 = new Neuron(50, 320);
+let neuron2 = new Neuron(200, 200);
 neuron2.inputs.push(new Synapse(neuron1, neuron2));
 neuron1.outputs.push(neuron2);
 
 neurons.push(neuron1);
 neurons.push(neuron2);
 
-let graphFocus = neurons[1];
-let lasty = 48;
-
-let active = null;
+let active = neurons[1];
 
 let oldt = null; // real ms
 function tick(t) {
@@ -240,78 +275,26 @@ function tick(t) {
 
   signals = signals.filter((s) => s.time <= delay);
 
-  if (!down && active && !(active instanceof Synapse)) {
+  if (drawingEdge && active && !(active instanceof Synapse)) {
     ctx.strokeStyle = active.sign > 0 ? "#6bafd6" : "#d66b88";
-    ctx.lineWidth = 1;
-    let x = mouse.x;
-    let y = mouse.y;
-    let below =
-      neurons.find(
-        (n) => n.x < x + box && n.x > x - box && n.y < y + box && n.y > y - box
-      ) || {};
-    let belowEdge = {};
-    if (!below.x && neuromodulation)
-      neurons.find((n) => {
-        let out = n.inputs.find(
-          (o) =>
-            distToSegment([x, y], [o.start.x, o.start.y], [o.end.x, o.end.y]) <
-            box
-        );
-        if (out && out.start != active && out.end != active)
-          belowEdge = { x: out.x, y: out.y };
-        return out;
-      });
+    ctx.lineWidth = 2;
+    let below = getBelow() || {};
 
-    drawArrow(
-      active.x,
-      active.y,
-      below.x || belowEdge.x || mouse.x,
-      below.y || belowEdge.y || mouse.y
-    );
+    drawArrow(active.x, active.y, below.x || mouse.x, below.y || mouse.y);
   }
 
-  ctx.lineWidth = 2;
-  if (graphFocus) {
-    ctx.strokeStyle = "blue";
-    ctx.strokeRect(
-      graphFocus.x - box + 2,
-      graphFocus.y - box + 2,
-      box * 2 - 4,
-      box * 2 - 4
-    );
-  }
+  neurons.forEach((n) => n.drawGraph());
 
   if (active) {
     if (active instanceof Synapse) {
-      ctx.strokeStyle = active.start.sign > 0 ? "#6bafd6" : "#d66b88";
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
       drawArrow(active.start.x, active.start.y, active.end.x, active.end.y);
     } else {
+      ctx.lineWidth = 2;
       ctx.strokeStyle = "black";
       ctx.strokeRect(active.x - box, active.y - box, box * 2, box * 2);
     }
-  }
-
-  ctx2.scale(1 / scale, 1 / scale);
-  ctx2.drawImage(c2, -1, 0);
-  ctx2.scale(scale, scale);
-
-  ctx2.fillStyle = "white";
-
-  ctx2.fillRect(80 - 1, 0, 2, 48);
-
-  if (graphFocus) {
-    ctx2.strokeStyle = "blue";
-
-    ctx2.lineWidth = 2;
-    ctx2.beginPath();
-    ctx2.moveTo(80 - 1, lasty);
-    let newy = (graphFocus.voltage / resetVoltage) * 48;
-    if (graphFocus.lastFire == scaleddt) newy = 0;
-    ctx2.lineTo(80, newy);
-
-    lasty = newy;
-    ctx2.stroke();
   }
 
   oldt = t;
@@ -322,23 +305,49 @@ window.requestAnimationFrame(tick);
 
 let mouse = { x: 0, y: 0 };
 let down = false;
+let drawingEdge = false;
 c.addEventListener("contextmenu", (e) => {
   e.preventDefault();
   return false;
 });
+
+function getBelow() {
+  let x = mouse.x;
+  let y = mouse.y;
+  let below = neurons.find(
+    (n) => n.x < x + box && n.x > x - box && n.y < y + box && n.y > y - box
+  );
+  if (below) return below;
+  let belowEdge;
+  neurons.some((n) => {
+    let out = n.inputs.find(
+      (o) =>
+        distToSegment([x, y], [o.start.x, o.start.y], [o.end.x, o.end.y]) <
+          box &&
+        (!drawingEdge || (o.start != active && o.end != active))
+    );
+    if (out) belowEdge = out;
+    return out;
+  });
+  if (belowEdge) return belowEdge;
+
+  return null;
+}
+let startx = 0;
+let starty = 0;
+let canchangedraw = false;
 c.addEventListener("mousedown", (e) => {
   let x = e.clientX - c.getBoundingClientRect().left;
   let y = e.clientY - c.getBoundingClientRect().top;
   mouse.x = x;
   mouse.y = y;
-  let below = neurons.find(
-    (n) => n.x < x + box && n.x > x - box && n.y < y + box && n.y > y - box
-  );
+  let below = getBelow();
 
-  // clicks on neuron
-  if (below) {
-    // initiate signal with right click
+  // What did the user click on
+  if (below instanceof Neuron) {
+    // User clicked / right-clicked on neuron
     if (e.button == 2) {
+      // initiate signal with right click
       if (below.lastFire > delay) {
         below.fired = false;
         below.lastFire = 0.0;
@@ -346,89 +355,115 @@ c.addEventListener("mousedown", (e) => {
         below.outputs.forEach((o) => signals.push(new Signal(below, o)));
       }
     } else {
-      if (active != null && !(active instanceof Synapse)) {
-        // select neuron and make connection
+      if (active && drawingEdge && !(active instanceof Synapse)) {
         if (below != active) {
+          // select neuron and make connection
           below.inputs.push(new Synapse(active, below));
           active.outputs.push(below);
+        } else {
+          canchangedraw = false;
         }
-        active = null;
+
+        drawingEdge = false;
       } else {
         // select active neuron
         down = true;
-        active = below;
+        drawingEdge = e.altKey;
+        setActive(below);
       }
     }
-  } else {
-    // not to existing neuron
-    let belowEdge;
-    neurons.find((n) => {
-      let out = n.inputs.find(
-        (o) =>
-          distToSegment([x, y], [o.start.x, o.start.y], [o.end.x, o.end.y]) <
-          box
-      );
-      let out2 = n.outputs.find((o) => o.end);
-      if (out) belowEdge = out;
-      return out;
-    });
-    if (belowEdge) {
-      // neuromodulation
-      if (
-        active &&
-        neuromodulation &&
-        !(active instanceof Synapse) &&
-        belowEdge.start != active &&
-        belowEdge.end != active
-      ) {
-        active.outputs.push(belowEdge);
-        active = null;
-      } else {
-        active = belowEdge;
-      }
+  } else if (below instanceof Synapse) {
+    // user clicked on a synapse
+    if (
+      active &&
+      neuromodulation &&
+      drawingEdge &&
+      !(active instanceof Synapse)
+    ) {
+      active.outputs.push(below);
+      drawingEdge = false;
     } else {
-      // new neuron
-      let n = new Neuron(x, y, e.shiftKey ? -1 : 1);
-      neurons.push(n);
-      if (active && !(active instanceof Synapse)) {
-        n.inputs.push(new Synapse(active, n));
-        active.outputs.push(n);
-      }
-      active = null;
+      setActive(below);
     }
+  } else if (drawingEdge) {
+    // user clicked on empty space empty, so create a new neuron
+    let n = new Neuron(x, y, defaultSign == 1 ? (e.shiftKey ? -1 : 1) : -1);
+    neurons.push(n);
+    if (active && !(active instanceof Synapse)) {
+      n.inputs.push(new Synapse(active, n));
+      active.outputs.push(n);
+    }
+    drawingEdge = false;
   }
 });
 
-let movedx = 0;
-let movedy = 0;
 window.addEventListener("mousemove", (e) => {
   let x = Math.min(Math.max(e.pageX - c.offsetLeft, 0), c.width);
   let y = Math.min(Math.max(e.pageY - c.offsetTop, 0), c.height);
   mouse.x = x;
   mouse.y = y;
-  if (active && !(active instanceof Synapse) && down) {
-    movedx += active.x - x;
-    movedy += active.y - y;
+  if (active && !(active instanceof Synapse) && down && !drawingEdge) {
     active.x = x;
     active.y = y;
   }
 });
 window.addEventListener("mouseup", (e) => {
   down = false;
-  if (Math.abs(movedx) > 20 || Math.abs(movedy) > 20) {
-    active = null;
-    movedx = 0;
-    movedy = 0;
+  let below = getBelow();
+  if (
+    !drawingEdge &&
+    canchangedraw &&
+    active == below &&
+    Math.hypot(startx - mouse.x, starty - mouse.y) < 20
+  ) {
+    drawingEdge = true;
+  } else if (
+    drawingEdge &&
+    active &&
+    Math.hypot(startx - mouse.x, starty - mouse.y) > 20
+  ) {
+    if (below instanceof Neuron) {
+      below.inputs.push(new Synapse(active, below));
+      active.outputs.push(below);
+    } else if (below instanceof Synapse) {
+      if (neuromodulation) {
+        active.outputs.push(below);
+      }
+    } else {
+      let n = new Neuron(mouse.x, mouse.y, e.shiftKey ? -1 : 1);
+      neurons.push(n);
+      n.inputs.push(new Synapse(active, n));
+      active.outputs.push(n);
+    }
+    drawingEdge = false;
   }
 });
 
+function setActive(newval) {
+  canchangedraw = active == newval;
+
+  active = newval;
+
+  if (active instanceof Neuron) {
+    thresholdIn.value =
+      (active.threshold - restingPotential) / (threshold - restingPotential);
+    graphed.checked = !!active.canvas;
+  }
+  if (active) {
+    startx = active.x;
+    starty = active.y;
+  }
+}
 let keysdown = {};
 window.addEventListener("keydown", (e) => {
   const key = e.keyCode ? e.keyCode : e.which;
   if (!(key in keysdown)) {
     keysdown[key] = true;
 
-    if (key == 27) active = null;
+    if (key == 27) {
+      if (drawingEdge) drawingEdge = false;
+      else setActive(null);
+    }
     if (key == 8 && active) {
       if (active instanceof Synapse) {
         active.start.outputs = active.start.outputs.filter(
@@ -437,7 +472,7 @@ window.addEventListener("keydown", (e) => {
         active.end.inputs = active.end.inputs.filter(
           (i) => i.start != active.start
         );
-        active = null;
+        setActive(null);
       } else {
         neurons = neurons.filter((n) => n != active);
         active.outputs.forEach((n) => {
@@ -448,20 +483,14 @@ window.addEventListener("keydown", (e) => {
           (n) => (n.start.outputs = n.start.outputs.filter((o) => o != active))
         );
         signals = signals.filter((s) => s.end != active && s.start != active);
-        if (graphFocus == active) graphFocus = null;
-        active = null;
+
+        setActive(null);
       }
     }
     if (key == 73) {
       console.log(active);
     }
     if (key == 32) {
-      graphFocus = active;
-      threshold_in.value =
-        (graphFocus.threshold - restingPotential) /
-        (threshold - restingPotential);
-      ctx2.clearRect(0, 0, 40, 80);
-      // console.log(graphFocus);
       console.log(quickEncode());
     }
   }
@@ -529,24 +558,31 @@ function quickDecode(str) {
     neurons[i].outputs = l.outputs.map((o) => neurons.find((n) => n.id == o));
     neurons[i].inputs = l.inputs.map((i) => wires.find((w) => w.id == i));
   });
-  // active = null;
-  graphFocus = neurons[0];
+
+  setActive(neurons[0]);
 }
 
-const threshold_in = document.getElementById("threshold");
-const graph_in = document.getElementById("init_graph");
-
-threshold_in.onchange = () => {
-  if (threshold_in.value == null) return;
+const thresholdIn = document.getElementById("threshold");
+thresholdIn.onchange = () => {
+  if (thresholdIn.value == null) return;
 
   let ddd = threshold - restingPotential;
-  let newT = restingPotential + Number(threshold_in.value) * ddd;
-  graphFocus.threshold = newT;
+  let newT = restingPotential + Number(thresholdIn.value) * ddd;
+  active.threshold = newT;
   console.log("Changed threshold to " + newT);
 };
-graph_in.onchange = () => {
-  quickDecode(graph_in.value);
+
+const graphed = document.getElementById("graph-toggle");
+graphed.onchange = () => {
+  if (graphed.checked) active.createGraph();
+  else active.deleteGraph();
 };
+
+const graphIn = document.getElementById("init-graph");
+graphIn.onchange = () => {
+  quickDecode(graphIn.value);
+};
+
 window.onresize = () => {
   w = window.innerWidth - 240;
   h = window.innerHeight - 40;
@@ -557,16 +593,28 @@ window.onresize = () => {
   ctx.scale(scale, scale);
 };
 let modal = document.querySelector(".modal");
-let help = document.querySelector("#help");
-let span = document.querySelector(".close");
-help.onclick = () => {
+document.querySelector("#help").onclick = () => {
   modal.style.display = "block";
 };
-span.onclick = () => {
+document.querySelector(".close").onclick = () => {
   modal.style.display = "none";
 };
-window.onclick = (event) => {
+window.addEventListener("click", (event) => {
   if (event.target == modal) {
     modal.style.display = "none";
   }
+});
+
+let toolbar = document.querySelector(".toolbar");
+let blue = toolbar.firstElementChild;
+let red = blue.nextElementSibling;
+blue.onclick = () => {
+  defaultSign = 1;
+  blue.classList.add("selected");
+  red.classList.remove("selected");
+};
+red.onclick = () => {
+  defaultSign = -1;
+  red.classList.add("selected");
+  blue.classList.remove("selected");
 };

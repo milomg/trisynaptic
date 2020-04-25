@@ -1,32 +1,20 @@
 const fs = require("fs");
 const execshell = require("exec-sh");
-let watching = false;
+const chokidar = require("chokidar");
+
 function build() {
-  if (watching) return;
-  watching = true;
-
-  execshell("esbuild script.js --outdir=dist --minify --bundle --sourcemap");
-
-  setTimeout(() => {
-    watching = false;
-  }, 100);
+  execshell("esbuild script.js --outfile=dist/script.js --bundle --sourcemap");
 }
 
-let watching2 = false;
 function copy() {
-  if (watching2) return;
-  watching2 = true;
-
-  fs.copyFileSync("index.html", "dist/index.html");
-  console.log("Wrote to dist/index.html");
-
-  setTimeout(() => {
-    watching2 = false;
-  }, 100);
+  fs.copyFile("index.html", "dist/index.html", (err) => {
+    if (err) throw err;
+    console.log("Wrote to dist/index.html");
+  });
 }
 
-fs.watch("script.js", "utf8", build);
-fs.watch("index.html", "utf8", copy);
+chokidar.watch("script.js").on("change", build);
+chokidar.watch("index.html").on("change", copy);
 
 build();
 copy();
