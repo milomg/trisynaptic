@@ -472,6 +472,9 @@ window.addEventListener("keydown", (e) => {
         active.end.inputs = active.end.inputs.filter(
           (i) => i.start != active.start
         );
+        neurons.forEach((n) => {
+          n.outputs = n.outputs.filter((o) => o != active);
+        });
         setActive(null);
       } else {
         neurons = neurons.filter((n) => n != active);
@@ -479,9 +482,16 @@ window.addEventListener("keydown", (e) => {
           if (n.inputs) n.inputs = n.inputs.filter((o) => o.start != active);
         });
 
-        active.inputs.forEach(
-          (n) => (n.start.outputs = n.start.outputs.filter((o) => o != active))
-        );
+        active.inputs.forEach((n) => {
+          n.start.outputs = n.start.outputs.filter((o) => o != active);
+        });
+        neurons.forEach((n) => {
+          n.outputs = n.outputs.filter((o) => {
+            return (
+              !(o instanceof Synapse) || (o.end != active && o.start != active)
+            );
+          });
+        });
         signals = signals.filter((s) => s.end != active && s.start != active);
 
         setActive(null);
