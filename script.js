@@ -392,6 +392,8 @@ c.addEventListener("mousedown", (e) => {
     if (active && drawingEdge && !(active instanceof Synapse)) {
       n.inputs.push(new Synapse(active, n));
       active.outputs.push(n);
+    } else {
+      setActive(n);
     }
     drawingEdge = false;
   }
