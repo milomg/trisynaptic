@@ -127,7 +127,7 @@ class Neuron {
     this.graph = null;
     this.lasty = 48;
 
-    this.tags = {"all":true};
+    this.tags = {"all":true,"red":false,"blue":false,"green":false};
   }
   createGraph() {
     this.canvas = document.createElement("canvas");
