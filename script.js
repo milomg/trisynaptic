@@ -273,7 +273,6 @@ function tick(t) {
   let anytag = false;
   for(let foo in tags){
     if(tags[foo]) anytag = true;
-    console.log(foo,tags[foo]);
   }
   if(!anytag) tags["all"] = true;
 
@@ -289,6 +288,7 @@ function tick(t) {
   neurons.forEach((n) => n.drawArrows());
   for(let n in neurons){
     for(let tag in n.tags){
+      console.log(tag,n.tags[tag],tags[tag]);
       if(n.tags[tag]&&tags[tag]){
         n.draw();
         break;
