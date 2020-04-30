@@ -271,7 +271,7 @@ function tick(t) {
   tags["blue"] = document.getElementById("blue-toggle").checked;
 
   let anytag = false;
-  for(let foo of tags.entries()){
+  for(var foo in tags){
     if(tags[foo]) anytag = true;
   }
   if(!anytag) tags["all"] = true;
@@ -289,7 +289,7 @@ function tick(t) {
   neurons.forEach((n) => console.log(n.tags));
   for(let n of neurons){
     console.log(n.tags);
-    for(let ttt of n.tags.entries()){
+    for(var ttt in n.tags){
       console.log(ttt,n.tags[ttt],tags[ttt]);
       if(n.tags[ttt]&&tags[ttt]){
         n.draw();
