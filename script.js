@@ -126,6 +126,8 @@ class Neuron {
     this.canvas = null;
     this.graph = null;
     this.lasty = 48;
+
+    this.tags = {"all":true};
   }
   createGraph() {
     this.canvas = document.createElement("canvas");
@@ -253,12 +255,26 @@ neurons.push(neuron2);
 let active = neurons[1];
 
 let oldt = null; // real ms
+
+
 function tick(t) {
   stats.begin();
   if (!oldt) oldt = t;
   let dt = Math.min((t - oldt) / 1000, 1);
 
   let scaleddt = dt * timeScale; // delta ms
+
+  //tagging
+  let tags = {};
+  tags["red"] = document.getElementById("red-toggle").checked;
+  tags["green"] = document.getElementById("green-toggle").checked;
+  tags["blue"] = document.getElementById("blue-toggle").checked;
+
+  let anytag = false;
+  for(let foo of tags){
+    if(tags[foo]) anytag = true;
+  }
+  if(!anytag) tags["all"] = true;
 
   neurons.forEach((n) => n.tick(scaleddt));
 
@@ -270,7 +286,14 @@ function tick(t) {
   ctx.fillRect(0, 0, c.width, c.height);
 
   neurons.forEach((n) => n.drawArrows());
-  neurons.forEach((n) => n.draw());
+  for(let n of neurons){
+    for(let tag of n.tags){
+      if(n.tags[tag]&&tags[tag]){
+        n.draw();
+        break;
+      }
+    }
+  }
   signals.forEach((s) => s.draw());
 
   signals = signals.filter((s) => s.time <= delay);
@@ -505,6 +528,17 @@ window.addEventListener("keydown", (e) => {
     if (key == 32) {
       console.log(quickEncode());
     }
+    if(active){ //tags neuron
+      if(key==49){
+        active.tags["red"]=active.tags["red"]==false;
+      }
+      if(key==50){
+        active.tags["blue"]=active.tags["blue"]==false;
+      }
+      if(key==51){
+        active.tags["green"]=active.tags["green"]==false;
+      }
+    }
   }
 });
 
@@ -594,6 +628,9 @@ const graphIn = document.getElementById("init-graph");
 graphIn.onchange = () => {
   quickDecode(graphIn.value);
 };
+
+
+
 
 window.onresize = () => {
   w = window.innerWidth - 240;
