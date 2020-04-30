@@ -271,7 +271,7 @@ function tick(t) {
   tags["blue"] = document.getElementById("blue-toggle").checked;
 
   let anytag = false;
-  for(let foo of tags){
+  for(let foo in tags){
     if(tags[foo]) anytag = true;
   }
   if(!anytag) tags["all"] = true;
