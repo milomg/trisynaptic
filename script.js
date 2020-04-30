@@ -547,13 +547,19 @@ window.addEventListener("keydown", (e) => {
     }
     if(active){ //tags neuron
       if(key==49){
-        active.tags["red"]=active.tags["red"]==false;
+        if(active.tags["red"])
+          active.tags["red"]==false;
+        else active.tags["red"]==true;
       }
       if(key==50){
-        active.tags["blue"]=active.tags["blue"]==false;
+        if(active.tags["blue"])
+          active.tags["blue"]==false;
+        else active.tags["blue"]==true;
       }
       if(key==51){
-        active.tags["green"]=active.tags["green"]==false;
+        if(active.tags["green"])
+          active.tags["green"]==false;
+        else active.tags["green"]==true;
       }
     }
   }
