@@ -287,7 +287,7 @@ function tick(t) {
 
   neurons.forEach((n) => n.drawArrows());
   for(let n in neurons){
-    console.log("hi");
+    console.log(n.tags);
     for(let ttt in n.tags){
       console.log(ttt,n.tags[ttt],tags[ttt]);
       if(n.tags[ttt]&&tags[ttt]){
