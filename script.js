@@ -127,7 +127,7 @@ class Neuron {
     this.graph = null;
     this.lasty = 48;
 
-    this.tags = {"all":true};
+    this.tags = { all: true };
   }
   createGraph() {
     this.canvas = document.createElement("canvas");
@@ -224,14 +224,20 @@ class Neuron {
       drawArrow(this.x, this.y, n.x, n.y);
     });
   }
-  drawTags(){
+  drawTags() {
     let count = 0;
-    for(var ttt in this.tags){
-      if(this.tags[ttt]){
+    for (var ttt in this.tags) {
+      if (this.tags[ttt]) {
         ctx.fillStyle = ttt;
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(this.x+radius+10, this.y-radius+2 + count*8, 3, 0, 2 * Math.PI);
+        ctx.arc(
+          this.x + radius + 10,
+          this.y - radius + 2 + count * 8,
+          3,
+          0,
+          2 * Math.PI
+        );
         ctx.fill();
         ctx.fill();
         count++;
@@ -270,7 +276,6 @@ let active = neurons[1];
 
 let oldt = null; // real ms
 
-
 function tick(t) {
   stats.begin();
   if (!oldt) oldt = t;
@@ -278,17 +283,15 @@ function tick(t) {
 
   let scaleddt = dt * timeScale; // delta ms
 
-  //tagging
+  // tagging
   let tags = {};
   tags["red"] = document.getElementById("red-toggle").checked;
   tags["green"] = document.getElementById("green-toggle").checked;
   tags["blue"] = document.getElementById("blue-toggle").checked;
 
-  let anytag = false;
-  for(var foo in tags){
-    if(tags[foo]) anytag = true;
-  }
-  if(!anytag) tags["all"] = true;
+  tags["all"] = !Object.keys(tags).some((foo) => tags[foo]);
+
+  // drawing
 
   neurons.forEach((n) => n.tick(scaleddt));
 
@@ -299,14 +302,12 @@ function tick(t) {
   ctx.fillStyle = "#e5e5e5";
   ctx.fillRect(0, 0, c.width, c.height);
 
-  neurons.forEach((n) => n.drawArrows());
-  neurons.forEach((n) => n.drawTags());
-  for(let n of neurons){
-    //console.log(n.tags);
-    for(var ttt in n.tags){
-      //console.log(ttt,n.tags[ttt],tags[ttt]);
-      if(n.tags[ttt]&&tags[ttt]){
+  for (let n of neurons) {
+    for (var ttt in n.tags) {
+      if (n.tags[ttt] && tags[ttt]) {
         n.draw();
+        n.drawTags();
+        n.drawArrows();
         break;
       }
     }
@@ -545,21 +546,19 @@ window.addEventListener("keydown", (e) => {
     if (key == 32) {
       console.log(quickEncode());
     }
-    if(active){ //tags neuron
-      if(key==49){
-        if(active.tags["red"])
-          active.tags["red"]=false;
-        else active.tags["red"]=true;
+    if (active) {
+      //tags neuron
+      if (key == 49) {
+        if (active.tags["red"]) active.tags["red"] = false;
+        else active.tags["red"] = true;
       }
-      if(key==50){
-        if(active.tags["blue"])
-          active.tags["blue"]=false;
-        else active.tags["blue"]=true;
+      if (key == 50) {
+        if (active.tags["blue"]) active.tags["blue"] = false;
+        else active.tags["blue"] = true;
       }
-      if(key==51){
-        if(active.tags["green"])
-          active.tags["green"]=false;
-        else active.tags["green"]=true;
+      if (key == 51) {
+        if (active.tags["green"]) active.tags["green"] = false;
+        else active.tags["green"] = true;
       }
     }
   }
@@ -651,9 +650,6 @@ const graphIn = document.getElementById("init-graph");
 graphIn.onchange = () => {
   quickDecode(graphIn.value);
 };
-
-
-
 
 window.onresize = () => {
   w = window.innerWidth - 240;
