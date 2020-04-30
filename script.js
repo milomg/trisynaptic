@@ -224,6 +224,18 @@ class Neuron {
       drawArrow(this.x, this.y, n.x, n.y);
     });
   }
+  drawTags(){
+    let count = 0;
+    for(var ttt in n.tags){
+      ctx.fillStyle = ttt;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(this.x+radius+10, this.y-radius+2 + count*8, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fill();
+
+    }
+  }
   draw() {
     let unscaled =
       (this.voltage - restingPotential) / (threshold - restingPotential);
@@ -286,11 +298,11 @@ function tick(t) {
   ctx.fillRect(0, 0, c.width, c.height);
 
   neurons.forEach((n) => n.drawArrows());
-  neurons.forEach((n) => console.log(n.tags));
+  neurons.forEach((n) => n.drawTags());
   for(let n of neurons){
-    console.log(n.tags);
+    //console.log(n.tags);
     for(var ttt in n.tags){
-      console.log(ttt,n.tags[ttt],tags[ttt]);
+      //console.log(ttt,n.tags[ttt],tags[ttt]);
       if(n.tags[ttt]&&tags[ttt]){
         n.draw();
         break;
