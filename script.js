@@ -286,6 +286,7 @@ function tick(t) {
   ctx.fillRect(0, 0, c.width, c.height);
 
   neurons.forEach((n) => n.drawArrows());
+  neurons.forEach((n) => console.log(n.tags));
   for(let n in neurons){
     console.log(n.tags);
     for(let ttt in n.tags){
