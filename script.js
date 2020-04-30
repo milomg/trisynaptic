@@ -226,7 +226,7 @@ class Neuron {
   }
   drawTags(){
     let count = 0;
-    for(var ttt in n.tags){
+    for(var ttt in this.tags){
       ctx.fillStyle = ttt;
       ctx.lineWidth = 4;
       ctx.beginPath();
