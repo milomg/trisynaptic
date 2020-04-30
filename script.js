@@ -227,13 +227,15 @@ class Neuron {
   drawTags(){
     let count = 0;
     for(var ttt in this.tags){
-      ctx.fillStyle = ttt;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(this.x+radius+10, this.y-radius+2 + count*8, 3, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fill();
-
+      if(this.tags[ttt]){
+        ctx.fillStyle = ttt;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(this.x+radius+10, this.y-radius+2 + count*8, 3, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fill();
+        count++;
+      }
     }
   }
   draw() {
