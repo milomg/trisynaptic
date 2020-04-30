@@ -273,6 +273,7 @@ function tick(t) {
   let anytag = false;
   for(let foo in tags){
     if(tags[foo]) anytag = true;
+    console.log(foo,tags[foo]);
   }
   if(!anytag) tags["all"] = true;
 
