@@ -127,7 +127,7 @@ class Neuron {
     this.graph = null;
     this.lasty = 48;
 
-    this.tags = {"all":true,"red":false,"blue":false,"green":false};
+    this.tags = {"all":true};
   }
   createGraph() {
     this.canvas = document.createElement("canvas");
@@ -548,18 +548,18 @@ window.addEventListener("keydown", (e) => {
     if(active){ //tags neuron
       if(key==49){
         if(active.tags["red"])
-          active.tags["red"]==false;
-        else active.tags["red"]==true;
+          active.tags["red"]=false;
+        else active.tags["red"]=true;
       }
       if(key==50){
         if(active.tags["blue"])
-          active.tags["blue"]==false;
-        else active.tags["blue"]==true;
+          active.tags["blue"]=false;
+        else active.tags["blue"]=true;
       }
       if(key==51){
         if(active.tags["green"])
-          active.tags["green"]==false;
-        else active.tags["green"]==true;
+          active.tags["green"]=false;
+        else active.tags["green"]=true;
       }
     }
   }
