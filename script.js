@@ -17,6 +17,8 @@ c.width = Math.ceil(w * scale);
 c.height = Math.ceil(h * scale);
 ctx.scale(scale, scale);
 
+const vGraph = {width:60,height:35}; //voltage graph dimensions
+
 const restingPotential = -70.0e-3; // mV
 const threshold = -55.0e-3; // mV
 const resetVoltage = -80.0e-3; // mV
@@ -133,13 +135,13 @@ class Neuron {
     this.canvas = document.createElement("canvas");
     this.graph = this.canvas.getContext("2d");
 
-    this.canvas.style.width = "80px";
-    this.canvas.style.height = "48px";
-    this.canvas.width = Math.ceil(80 * scale);
-    this.canvas.height = Math.ceil(48 * scale);
+    this.canvas.style.width = String(vGraph.width)+"px";
+    this.canvas.style.height = String(vGraph.height)+"px";
+    this.canvas.width = Math.ceil(vGraph.width * scale);
+    this.canvas.height = Math.ceil(vGraph.height * scale);
     this.graph.scale(scale, scale);
     this.graph.fillStyle = "white";
-    this.graph.fillRect(0, 0, 80, 48);
+    this.graph.fillRect(0, 0, vGraph.width, vGraph.height);
   }
   deleteGraph() {
     this.graph = null;
@@ -148,28 +150,28 @@ class Neuron {
   updateGraph(dt) {
     if (!this.graph) return;
     this.graph.scale(1 / scale, 1 / scale);
-    this.graph.drawImage(this.canvas, -1, 0);
+    this.graph.drawImage(this.canvas, -1.5, 0);
     this.graph.scale(scale, scale);
 
     this.graph.fillStyle = "white";
 
-    this.graph.fillRect(80 - 1, 0, 2, 48);
+    this.graph.fillRect(vGraph.width - 1, 0, 2, vGraph.height);
 
     this.graph.strokeStyle = "#18a0fb";
 
-    this.graph.lineWidth = 2;
+    this.graph.lineWidth = 0.4;
     this.graph.beginPath();
-    this.graph.moveTo(80 - 1, this.lasty);
-    let newy = (this.voltage / resetVoltage) * 48;
+    this.graph.moveTo(vGraph.width - 1, this.lasty);
+    let newy = (this.voltage / resetVoltage) * vGraph.height;
     if (this.lastFire == dt) newy = 0;
-    this.graph.lineTo(80, newy);
+    this.graph.lineTo(vGraph.width, newy);
 
     this.lasty = newy;
     this.graph.stroke();
   }
   drawGraph() {
     if (!this.canvas) return;
-    ctx.drawImage(this.canvas, this.x - 40, this.y - box - 58);
+    ctx.drawImage(this.canvas, this.x + 20, this.y - box - 58);
   }
   leak() {
     return (-1.0 / resistance) * (this.voltage - restingPotential);
