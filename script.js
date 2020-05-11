@@ -150,7 +150,7 @@ class Neuron {
   updateGraph(dt) {
     if (!this.graph) return;
     this.graph.scale(1 / scale, 1 / scale);
-    this.graph.drawImage(this.canvas, -1.5, 0);
+    this.graph.drawImage(this.canvas, -1, 0);
     this.graph.scale(scale, scale);
 
     this.graph.fillStyle = "white";
@@ -159,7 +159,7 @@ class Neuron {
 
     this.graph.strokeStyle = "#18a0fb";
 
-    this.graph.lineWidth = 0.4;
+    this.graph.lineWidth = 1;
     this.graph.beginPath();
     this.graph.moveTo(vGraph.width - 1, this.lasty);
     let newy = (this.voltage / resetVoltage) * vGraph.height;
@@ -171,7 +171,11 @@ class Neuron {
   }
   drawGraph() {
     if (!this.canvas) return;
-    ctx.drawImage(this.canvas, this.x + 20, this.y - box - 58);
+    ctx.drawImage(
+      this.canvas,
+      this.x + vGraph.width / 2,
+      this.y - vGraph.height / 2
+    );
   }
   leak() {
     return (-1.0 / resistance) * (this.voltage - restingPotential);
