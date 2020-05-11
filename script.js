@@ -17,7 +17,7 @@ c.width = Math.ceil(w * scale);
 c.height = Math.ceil(h * scale);
 ctx.scale(scale, scale);
 
-const vGraph = {width:60,height:35}; //voltage graph dimensions
+const vGraph = { width: 60, height: 35 }; //voltage graph dimensions
 
 const restingPotential = -70.0e-3; // mV
 const threshold = -55.0e-3; // mV
@@ -135,8 +135,8 @@ class Neuron {
     this.canvas = document.createElement("canvas");
     this.graph = this.canvas.getContext("2d");
 
-    this.canvas.style.width = String(vGraph.width)+"px";
-    this.canvas.style.height = String(vGraph.height)+"px";
+    this.canvas.style.width = String(vGraph.width) + "px";
+    this.canvas.style.height = String(vGraph.height) + "px";
     this.canvas.width = Math.ceil(vGraph.width * scale);
     this.canvas.height = Math.ceil(vGraph.height * scale);
     this.graph.scale(scale, scale);
@@ -625,7 +625,9 @@ function quickDecode(str) {
   );
   lneurons.forEach((l, i) => {
     neurons[i].threshold = l.thresh;
-    neurons[i].outputs = l.outputs.map((o) => neurons.find((n) => n.id == o));
+    neurons[i].outputs = l.outputs.map(
+      (o) => neurons.find((n) => n.id == o) || wires.find((w) => w.id == o)
+    );
     neurons[i].inputs = l.inputs.map((i) => wires.find((w) => w.id == i));
   });
 
