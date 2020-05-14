@@ -18,6 +18,7 @@ c.height = Math.ceil(h * scale);
 ctx.scale(scale, scale);
 
 const vGraph = { width: 60, height: 35 }; //voltage graph dimensions
+const offset = { x: 0, y: 0 };
 
 const restingPotential = -70.0e-3; // mV
 const threshold = -55.0e-3; // mV
@@ -230,26 +231,6 @@ class Neuron {
       drawArrow(this.x, this.y, n.x, n.y);
     });
   }
-  drawTags() {
-    let count = 0;
-    for (var ttt in this.tags) {
-      if (this.tags[ttt]) {
-        ctx.fillStyle = ttt;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(
-          this.x + radius + 10,
-          this.y - radius + 2 + count * 8,
-          3,
-          0,
-          2 * Math.PI
-        );
-        ctx.fill();
-        ctx.fill();
-        count++;
-      }
-    }
-  }
   draw() {
     let unscaled =
       (this.voltage - restingPotential) / (threshold - restingPotential);
@@ -289,15 +270,10 @@ function tick(t) {
 
   let scaleddt = dt * timeScale; // delta ms
 
-  // tagging
-  let tags = {};
-  tags["red"] = document.getElementById("red-toggle").checked;
-  tags["green"] = document.getElementById("green-toggle").checked;
-  tags["blue"] = document.getElementById("blue-toggle").checked;
-
-  tags["all"] = !Object.keys(tags).some((foo) => tags[foo]);
-
   // drawing
+
+  offset.x += 5 * (~~keysdown[37] - ~~keysdown[39]);
+  offset.y += 5 * (~~keysdown[38] - ~~keysdown[40]);
 
   neurons.forEach((n) => n.tick(scaleddt));
 
@@ -308,16 +284,14 @@ function tick(t) {
   ctx.fillStyle = "#e5e5e5";
   ctx.fillRect(0, 0, c.width, c.height);
 
+  ctx.save();
+  ctx.translate(offset.x, offset.y);
   for (let n of neurons) {
-    for (var ttt in n.tags) {
-      if (n.tags[ttt] && tags[ttt]) {
-        n.draw();
-        n.drawTags();
-        n.drawArrows();
-        break;
-      }
-    }
+    n.draw();
+
+    n.drawArrows();
   }
+
   signals.forEach((s) => s.draw());
 
   signals = signals.filter((s) => s.time <= delay);
@@ -344,6 +318,7 @@ function tick(t) {
     }
   }
 
+  ctx.restore();
   oldt = t;
   stats.end();
   window.requestAnimationFrame(tick);
@@ -384,8 +359,8 @@ let startx = 0;
 let starty = 0;
 let canchangedraw = false;
 c.addEventListener("mousedown", (e) => {
-  let x = e.clientX - c.getBoundingClientRect().left;
-  let y = e.clientY - c.getBoundingClientRect().top;
+  let x = e.clientX - c.getBoundingClientRect().left - offset.x;
+  let y = e.clientY - c.getBoundingClientRect().top - offset.y;
   mouse.x = x;
   mouse.y = y;
   let below = getBelow();
@@ -447,8 +422,8 @@ c.addEventListener("mousedown", (e) => {
 });
 
 window.addEventListener("mousemove", (e) => {
-  let x = Math.min(Math.max(e.pageX - c.offsetLeft, 0), c.width);
-  let y = Math.min(Math.max(e.pageY - c.offsetTop, 0), c.height);
+  let x = Math.min(Math.max(e.pageX - c.offsetLeft, 0), c.width) - offset.x;
+  let y = Math.min(Math.max(e.pageY - c.offsetTop, 0), c.height) - offset.y;
   mouse.x = x;
   mouse.y = y;
   if (active && !(active instanceof Synapse) && down && !drawingEdge) {
@@ -504,7 +479,7 @@ function setActive(newval) {
   }
 }
 let keysdown = {};
-window.addEventListener("keydown", (e) => {
+c.addEventListener("keydown", (e) => {
   const key = e.keyCode ? e.keyCode : e.which;
   if (!(key in keysdown)) {
     keysdown[key] = true;
@@ -512,8 +487,14 @@ window.addEventListener("keydown", (e) => {
     if (key == 27) {
       if (drawingEdge) drawingEdge = false;
       else setActive(null);
+      e.preventDefault();
+    }
+    if (key == 82) {
+      offset.x = 0;
+      offset.y = 0;
     }
     if (key == 8 && active) {
+      e.preventDefault();
       if (active instanceof Synapse) {
         active.start.outputs = active.start.outputs.filter(
           (o) => o != active.end
@@ -551,21 +532,6 @@ window.addEventListener("keydown", (e) => {
     }
     if (key == 32) {
       console.log(quickEncode());
-    }
-    if (active) {
-      //tags neuron
-      if (key == 49) {
-        if (active.tags["red"]) active.tags["red"] = false;
-        else active.tags["red"] = true;
-      }
-      if (key == 50) {
-        if (active.tags["blue"]) active.tags["blue"] = false;
-        else active.tags["blue"] = true;
-      }
-      if (key == 51) {
-        if (active.tags["green"]) active.tags["green"] = false;
-        else active.tags["green"] = true;
-      }
     }
   }
 });
@@ -674,10 +640,12 @@ document.querySelector("#help").onclick = () => {
 };
 document.querySelector(".close").onclick = () => {
   modal.style.display = "none";
+  c.focus();
 };
 window.addEventListener("click", (event) => {
   if (event.target == modal) {
     modal.style.display = "none";
+    c.focus();
   }
 });
 
@@ -694,3 +662,30 @@ red.onclick = () => {
   red.classList.add("selected");
   blue.classList.remove("selected");
 };
+
+document.addEventListener("copy", function (e) {
+  e.clipboardData.setData("text/plain", quickEncode());
+  e.preventDefault();
+});
+
+document.addEventListener("cut", function (e) {
+  e.clipboardData.setData("text/plain", quickEncode());
+  neurons = [];
+  signals = [];
+  id = 0;
+  active = null;
+  e.preventDefault();
+});
+
+document.addEventListener("paste", function (e) {
+  if (e.clipboardData.types.indexOf("text/plain") > -1) {
+    var data = e.clipboardData.getData("text/plain");
+    console.log(data);
+    try {
+      quickDecode(data);
+    } catch (e) {
+      console.log(e);
+    }
+    e.preventDefault();
+  }
+});
