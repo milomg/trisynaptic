@@ -121,6 +121,12 @@
         border: 2px solid #18a0fb;
         margin: 0px;
       }
+      .neuron #synapse {
+        display: none;
+      }
+      .synapse #neuron {
+        display: none;
+      }
     </style>
 
     <script src="/script.js" defer></script>
@@ -155,17 +161,26 @@
 
     <canvas id="c" tabindex="1"></canvas>
 
-    <div id="sidebar">
-      <h1>Neuron Info</h1>
-      <label>
-        Threshold:
-        <input id="threshold" value="1" type="number" min="1" max="10" />
-      </label>
-      <br />
-      <label>
-        Graphed:
-        <input type="checkbox" id="graph-toggle" />
-      </label>
+    <div id="sidebar" class="neuron">
+      <div id="neuron">
+        <h1>Neuron Info</h1>
+        <label>
+          Threshold:
+          <input id="threshold" value="1" type="number" min="1" max="10" />
+        </label>
+        <br />
+        <label>
+          Graphed:
+          <input type="checkbox" id="graph-toggle" />
+        </label>
+      </div>
+      <div id="synapse">
+        <h1>Synapse Info</h1>
+        <label>
+          Strength
+          <input id="strength" value="1" type="number" />
+        </label>
+      </div>
     </div>
 
     <div id="help">?</div>

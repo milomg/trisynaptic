@@ -1,20 +1,33 @@
+const servor = require("servor");
+const { build } = require("esbuild");
 const fs = require("fs");
-const execshell = require("exec-sh");
 const chokidar = require("chokidar");
 
-function build() {
-  execshell("esbuild script.js --outfile=dist/script.js --bundle --sourcemap");
+function runBuild() {
+  build({
+    stdio: "inherit",
+    entryPoints: ["./script.js"],
+    outfile: "dist/script.js",
+    sourcemap: "external",
+    bundle: true,
+  });
 }
 
 function copy() {
+  if (!fs.existsSync("dist")) fs.mkdirSync("dist");
   fs.copyFile("index.html", "dist/index.html", (err) => {
     if (err) throw err;
     console.log("Wrote to dist/index.html");
   });
 }
 
-chokidar.watch("script.js").on("change", build);
+chokidar.watch("script.js").on("change", runBuild);
 chokidar.watch("index.html").on("change", copy);
 
-build();
+runBuild();
 copy();
+
+servor({
+  root: "dist",
+  reload: true,
+});

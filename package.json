@@ -6,19 +6,18 @@
   "scripts": {
     "start": "node build.js",
     "build": "esbuild script.js --outfile=dist/script.js --minify --bundle && cp index.html dist",
-    "format": "prettier --write *.{js,html}"
+    "format": "prettier --write *.{js,html}",
+    "lint": "eslint script.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chokidar": "^3.3.1",
-    "esbuild": "^0.1.16",
-    "exec-sh": "^0.3.4",
+    "chokidar": "^3.4.0",
+    "esbuild": "^0.3.5",
     "prettier": "^2.0.5",
-    "servor": "^3.2.0",
-    "stats.js": "^0.17.0"
+    "servor": "^4.0.2"
   },
   "devDependencies": {
-    "eslint": "^6.8.0"
+    "eslint": "^7.0.0"
   }
 }

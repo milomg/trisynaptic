@@ -1,17 +1,19 @@
-import Stats from "stats.js";
-
-var stats = new Stats();
-stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
-stats.dom.style.bottom = 0;
-stats.dom.style.top = null;
-document.body.appendChild(stats.dom);
+const thresholdIn = document.getElementById("threshold");
+const sidebar = document.getElementById("sidebar");
+const synpaseStrength = document.getElementById("strength");
+const graphed = document.getElementById("graph-toggle");
+const graphIn = document.getElementById("init-graph");
+let toolbar = document.querySelector(".toolbar");
+let blue = toolbar.firstElementChild;
+let red = blue.nextElementSibling;
 
 const c = document.querySelector("#c");
 const ctx = c.getContext("2d");
+
 let w = window.innerWidth - 240;
 let h = window.innerHeight - 40;
-c.style.width = w + "px";
-c.style.height = h + "px";
+c.style.width = `${w}px`;
+c.style.height = `${h}px`;
 const scale = window.devicePixelRatio;
 c.width = Math.ceil(w * scale);
 c.height = Math.ceil(h * scale);
@@ -136,8 +138,8 @@ class Neuron {
     this.canvas = document.createElement("canvas");
     this.graph = this.canvas.getContext("2d");
 
-    this.canvas.style.width = String(vGraph.width) + "px";
-    this.canvas.style.height = String(vGraph.height) + "px";
+    this.canvas.style.width = `${vGraph.width}px`;
+    this.canvas.style.height = `${vGraph.height}px`;
     this.canvas.width = Math.ceil(vGraph.width * scale);
     this.canvas.height = Math.ceil(vGraph.height * scale);
     this.graph.scale(scale, scale);
@@ -191,6 +193,7 @@ class Neuron {
           .filter((n) => n instanceof Synapse)
           .forEach((n) => {
             n.maxCurrent += maxCurrent * this.sign;
+            if (n == active) synpaseStrength.value = n.maxCurrent / maxCurrent;
           });
       }
 
@@ -237,7 +240,7 @@ class Neuron {
     let b = Math.floor(Math.min(Math.max(unscaled, 0), 1) * 255);
 
     let i = this.sign > 0;
-    ctx.fillStyle = "rgb(" + (i ? 0 : b) + ",0," + (i ? b : 0) + ")";
+    ctx.fillStyle = `rgb(${i ? 0 : b},0,${i ? b : 0})`;
     ctx.strokeStyle = i ? "#6bafd6" : "#d66b88";
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -264,13 +267,10 @@ let active = neurons[1];
 let oldt = null; // real ms
 
 function tick(t) {
-  stats.begin();
   if (!oldt) oldt = t;
-  let dt = Math.min((t - oldt) / 1000, 1);
+  let dt = Math.min((t - oldt) / 1000, 0.02);
 
   let scaleddt = dt * timeScale; // delta ms
-
-  // drawing
 
   offset.x += 5 * (~~keysdown[37] - ~~keysdown[39]);
   offset.y += 5 * (~~keysdown[38] - ~~keysdown[40]);
@@ -297,10 +297,10 @@ function tick(t) {
   signals = signals.filter((s) => s.time <= delay);
 
   if (drawingEdge && active && !(active instanceof Synapse)) {
-    ctx.strokeStyle = active.sign > 0 ? "#6bafd6" : "#d66b88";
-    ctx.lineWidth = 2;
     let below = getBelow() || {};
 
+    ctx.strokeStyle = active.sign > 0 ? "#6bafd6" : "#d66b88";
+    ctx.lineWidth = 2;
     drawArrow(active.x, active.y, below.x || mouse.x, below.y || mouse.y);
   }
 
@@ -320,7 +320,7 @@ function tick(t) {
 
   ctx.restore();
   oldt = t;
-  stats.end();
+
   window.requestAnimationFrame(tick);
 }
 window.requestAnimationFrame(tick);
@@ -334,8 +334,7 @@ c.addEventListener("contextmenu", (e) => {
 });
 
 function getBelow() {
-  let x = mouse.x;
-  let y = mouse.y;
+  let { x, y } = mouse;
   let below = neurons.find(
     (n) => n.x < x + box && n.x > x - box && n.y < y + box && n.y > y - box
   );
@@ -473,9 +472,13 @@ function setActive(newval) {
       (active.threshold - restingPotential) / (threshold - restingPotential);
     graphed.checked = !!active.canvas;
   }
+  if (active instanceof Synapse) {
+    synpaseStrength.value = active.maxCurrent / maxCurrent;
+  }
   if (active) {
     startx = active.x;
     starty = active.y;
+    sidebar.className = active instanceof Neuron ? "neuron" : "synapse";
   }
 }
 let keysdown = {};
@@ -558,7 +561,7 @@ function distToSegment(p, v, w) {
 }
 
 function quickEncode() {
-  return (
+  return [
     JSON.stringify(
       neurons.map((n) => ({
         x: n.x,
@@ -566,11 +569,11 @@ function quickEncode() {
         id: n.id,
         sign: n.sign,
         thresh: n.threshold,
+        graphed: !!n.canvas,
         inputs: n.inputs.map((i) => i.id),
         outputs: n.outputs.map((o) => o.id),
       }))
-    ) +
-    "\n" +
+    ),
     JSON.stringify(
       neurons.flatMap((n) =>
         n.inputs
@@ -578,13 +581,17 @@ function quickEncode() {
           .filter((x) => x instanceof Synapse)
           .map((x) => ({ id: x.id, start: x.start.id, end: x.end.id }))
       )
-    )
-  );
+    ),
+  ].join("\n");
 }
 function quickDecode(str) {
   let a = str.split("\n");
   let lneurons = JSON.parse(a[0]);
-  neurons = lneurons.map((n) => new Neuron(n.x, n.y, n.sign, n.id));
+  neurons = lneurons.map((n) => {
+    const out = new Neuron(n.x, n.y, n.sign, n.id);
+    if (n.graphed) out.createGraph();
+    return out;
+  });
   let wires = JSON.parse(a[1]).map(
     (w) =>
       new Synapse(
@@ -604,23 +611,25 @@ function quickDecode(str) {
   setActive(neurons[0]);
 }
 
-const thresholdIn = document.getElementById("threshold");
+synpaseStrength.onchange = () => {
+  if (synpaseStrength.value == null) return;
+  active.maxCurrent = synpaseStrength.value * maxCurrent;
+};
+
 thresholdIn.onchange = () => {
   if (thresholdIn.value == null) return;
 
-  let ddd = threshold - restingPotential;
-  let newT = restingPotential + Number(thresholdIn.value) * ddd;
-  active.threshold = newT;
-  console.log("Changed threshold to " + newT);
+  active.threshold =
+    restingPotential +
+    Number(thresholdIn.value) * (threshold - restingPotential);
+  console.log(`Changed threshold to ${active.threshold}`);
 };
 
-const graphed = document.getElementById("graph-toggle");
 graphed.onchange = () => {
   if (graphed.checked) active.createGraph();
   else active.deleteGraph();
 };
 
-const graphIn = document.getElementById("init-graph");
 graphIn.onchange = () => {
   quickDecode(graphIn.value);
 };
@@ -628,8 +637,8 @@ graphIn.onchange = () => {
 window.onresize = () => {
   w = window.innerWidth - 240;
   h = window.innerHeight - 40;
-  c.style.width = w + "px";
-  c.style.height = h + "px";
+  c.style.width = `${w}px`;
+  c.style.height = `${h}px`;
   c.width = Math.ceil(w * scale);
   c.height = Math.ceil(h * scale);
   ctx.scale(scale, scale);
@@ -649,9 +658,6 @@ window.addEventListener("click", (event) => {
   }
 });
 
-let toolbar = document.querySelector(".toolbar");
-let blue = toolbar.firstElementChild;
-let red = blue.nextElementSibling;
 blue.onclick = () => {
   defaultSign = 1;
   blue.classList.add("selected");
@@ -663,12 +669,12 @@ red.onclick = () => {
   blue.classList.remove("selected");
 };
 
-document.addEventListener("copy", function (e) {
+document.addEventListener("copy", (e) => {
   e.clipboardData.setData("text/plain", quickEncode());
   e.preventDefault();
 });
 
-document.addEventListener("cut", function (e) {
+document.addEventListener("cut", (e) => {
   e.clipboardData.setData("text/plain", quickEncode());
   neurons = [];
   signals = [];
@@ -677,9 +683,9 @@ document.addEventListener("cut", function (e) {
   e.preventDefault();
 });
 
-document.addEventListener("paste", function (e) {
-  if (e.clipboardData.types.indexOf("text/plain") > -1) {
-    var data = e.clipboardData.getData("text/plain");
+document.addEventListener("paste", (e) => {
+  if (e.clipboardData.types.includes("text/plain")) {
+    const data = e.clipboardData.getData("text/plain");
     console.log(data);
     try {
       quickDecode(data);
