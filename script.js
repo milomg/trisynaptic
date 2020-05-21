@@ -40,13 +40,11 @@ const refractoryPeriod = 2.0e-3; // ms;
 const radius = 12;
 const box = 20;
 
-let signals = [];
 let id = 0;
 
 let defaultSign = 1;
 
 let neuromodulation = true;
-let hebbian = false;
 
 function drawArrow(fromx, fromy, tox, toy) {
   const headlen = 10; // length of head in pixels
@@ -70,15 +68,14 @@ function drawArrow(fromx, fromy, tox, toy) {
   );
   ctx.stroke();
 }
+
 class Synapse {
   constructor(start, end, inId = -1) {
     this.start = start;
     this.end = end;
     this.maxCurrent = maxCurrent;
-    if (inId == -1) {
-      this.id = id;
-      id++;
-    } else this.id = inId;
+    this.signals = [];
+    this.id = inId == -1 ? ++id : inId;
   }
   value() {
     return this.start.exponential * this.start.sign * this.maxCurrent;
@@ -89,25 +86,34 @@ class Synapse {
   get y() {
     return 0.5 * (this.start.y + this.end.y);
   }
-}
-
-class Signal {
-  constructor(start, end) {
-    this.start = start;
-    this.end = end;
-    this.time = 0;
+  fire() {
+    if (neuromodulation && this.end instanceof Synapse) {
+      this.end.maxCurrent += maxCurrent * this.start.sign;
+      if (this.end == active)
+        synpaseStrength.value = this.end.maxCurrent / maxCurrent;
+    }
+    this.signals.push(0);
   }
   tick(dt) {
-    this.time += dt;
+    for (const i in this.signals) {
+      this.signals[i] += dt;
+    }
   }
   draw() {
-    let x = this.start.x + ((this.end.x - this.start.x) * this.time) / delay;
-    let y = this.start.y + ((this.end.y - this.start.y) * this.time) / delay;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = this.start.sign > 0 ? "#6bafd6" : "#d66b88";
+    drawArrow(this.start.x, this.start.y, this.end.x, this.end.y);
 
-    ctx.strokeStyle = "black";
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, 2 * Math.PI);
-    ctx.stroke();
+    for (const time of this.signals) {
+      let x = this.start.x + ((this.end.x - this.start.x) * time) / delay;
+      let y = this.start.y + ((this.end.y - this.start.y) * time) / delay;
+
+      ctx.strokeStyle = "black";
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+    this.signals = this.signals.filter((time) => time <= delay);
   }
 }
 
@@ -115,10 +121,7 @@ class Neuron {
   constructor(x, y, sign = defaultSign, inId = -1) {
     this.x = x; // input
     this.y = y; // input
-    if (inId == -1) {
-      this.id = id;
-      id++;
-    } else this.id = inId; // input
+    this.id = inId == -1 ? ++id : inId; // input
 
     this.voltage = resetVoltage;
     this.inputs = []; // input (synapse)
@@ -187,23 +190,6 @@ class Neuron {
     if (this.lastFire > delay && !this.fired) {
       this.exponential = 1.0;
       this.fired = true;
-
-      if (neuromodulation) {
-        this.outputs
-          .filter((n) => n instanceof Synapse)
-          .forEach((n) => {
-            n.maxCurrent += maxCurrent * this.sign;
-            if (n == active) synpaseStrength.value = n.maxCurrent / maxCurrent;
-          });
-      }
-
-      if (hebbian) {
-        for (let i in this.inputs) {
-          let input = this.inputs[i];
-          let dt = input.start.lastFire - 2 * delay;
-          input.maxCurrent *= 1 + 1 / (dt * 1000 + (dt > 0 ? 1 : -1));
-        }
-      }
     }
     this.exponential -= (this.exponential * dt) / timeConstant;
   }
@@ -214,25 +200,17 @@ class Neuron {
       this.fired = false;
       this.lastFire = 0.0;
       this.voltage = resetVoltage; // V_reset
-      this.outputs.forEach((o) => signals.push(new Signal(this, o)));
+      this.outputs.forEach((o) => o.fire());
     } else {
-      let synCurrent = this.inputs.length
-        ? this.inputs.map((inp) => inp.value()).reduce((a, b) => a + b)
-        : 0;
+      let synCurrent = this.inputs
+        .map((i) => i.value())
+        .reduce((a, b) => a + b, 0);
       let totalCurrent = synCurrent + this.leak();
       let dv = (totalCurrent / capacitance) * dt;
       this.voltage += dv;
     }
     this.lastFire += dt;
     this.updateGraph(dt);
-    // this.voltage = this.threshold+0.01; // constant output
-  }
-  drawArrows() {
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = this.sign > 0 ? "#6bafd6" : "#d66b88";
-    this.outputs.forEach((n) => {
-      drawArrow(this.x, this.y, n.x, n.y);
-    });
   }
   draw() {
     let unscaled =
@@ -253,12 +231,15 @@ class Neuron {
 let timeScale = 0.01;
 
 let neurons = [];
+let synapses = [];
 
 let neuron1 = new Neuron(50, 50);
 let neuron2 = new Neuron(200, 200);
-neuron2.inputs.push(new Synapse(neuron1, neuron2));
-neuron1.outputs.push(neuron2);
+let conn = new Synapse(neuron1, neuron2);
+neuron2.inputs.push(conn);
+neuron1.outputs.push(conn);
 
+synapses.push(conn);
 neurons.push(neuron1);
 neurons.push(neuron2);
 
@@ -279,22 +260,19 @@ function tick(t) {
 
   neurons.forEach((n) => n.exp(scaleddt));
 
-  signals.forEach((s) => s.tick(scaleddt));
+  synapses.forEach((s) => s.tick(scaleddt));
 
   ctx.fillStyle = "#e5e5e5";
   ctx.fillRect(0, 0, c.width, c.height);
 
   ctx.save();
   ctx.translate(offset.x, offset.y);
+  for (let s of synapses) {
+    s.draw();
+  }
   for (let n of neurons) {
     n.draw();
-
-    n.drawArrows();
   }
-
-  signals.forEach((s) => s.draw());
-
-  signals = signals.filter((s) => s.time <= delay);
 
   if (drawingEdge && active && !(active instanceof Synapse)) {
     let below = getBelow() || {};
@@ -339,17 +317,11 @@ function getBelow() {
     (n) => n.x < x + box && n.x > x - box && n.y < y + box && n.y > y - box
   );
   if (below) return below;
-  let belowEdge;
-  neurons.some((n) => {
-    let out = n.inputs.find(
-      (o) =>
-        distToSegment([x, y], [o.start.x, o.start.y], [o.end.x, o.end.y]) <
-          box &&
-        (!drawingEdge || (o.start != active && o.end != active))
-    );
-    if (out) belowEdge = out;
-    return out;
-  });
+  let belowEdge = synapses.find(
+    (s) =>
+      distToSegment([x, y], [s.start.x, s.start.y], [s.end.x, s.end.y]) < box &&
+      (!drawingEdge || (s.start != active && s.end != active))
+  );
   if (belowEdge) return belowEdge;
 
   return null;
@@ -373,14 +345,16 @@ c.addEventListener("mousedown", (e) => {
         below.fired = false;
         below.lastFire = 0.0;
         below.voltage = resetVoltage;
-        below.outputs.forEach((o) => signals.push(new Signal(below, o)));
+        below.outputs.forEach((o) => o.fire());
       }
     } else {
-      if (active && drawingEdge && !(active instanceof Synapse)) {
+      if (active && drawingEdge && active instanceof Neuron) {
         if (below != active) {
           // select neuron and make connection
-          below.inputs.push(new Synapse(active, below));
-          active.outputs.push(below);
+          let conn = new Synapse(active, below);
+          synapses.push(conn);
+          below.inputs.push(conn);
+          active.outputs.push(conn);
         } else {
           canchangedraw = false;
         }
@@ -395,13 +369,10 @@ c.addEventListener("mousedown", (e) => {
     }
   } else if (below instanceof Synapse) {
     // user clicked on a synapse
-    if (
-      active &&
-      neuromodulation &&
-      drawingEdge &&
-      !(active instanceof Synapse)
-    ) {
-      active.outputs.push(below);
+    if (active && neuromodulation && drawingEdge && active instanceof Neuron) {
+      let conn = new Synapse(active, below);
+      synapses.push(conn);
+      active.outputs.push(conn);
       drawingEdge = false;
     } else {
       setActive(below);
@@ -411,8 +382,10 @@ c.addEventListener("mousedown", (e) => {
     let n = new Neuron(x, y, defaultSign == 1 ? (e.shiftKey ? -1 : 1) : -1);
     neurons.push(n);
     if (active && drawingEdge && !(active instanceof Synapse)) {
-      n.inputs.push(new Synapse(active, n));
-      active.outputs.push(n);
+      let conn = new Synapse(active, n);
+      synapses.push(conn);
+      n.inputs.push(conn);
+      active.outputs.push(conn);
     } else {
       setActive(n);
     }
@@ -425,7 +398,7 @@ window.addEventListener("mousemove", (e) => {
   let y = Math.min(Math.max(e.pageY - c.offsetTop, 0), c.height) - offset.y;
   mouse.x = x;
   mouse.y = y;
-  if (active && !(active instanceof Synapse) && down && !drawingEdge) {
+  if (active && active instanceof Neuron && down && !drawingEdge) {
     active.x = x;
     active.y = y;
   }
@@ -446,17 +419,23 @@ window.addEventListener("mouseup", (e) => {
     Math.hypot(startx - mouse.x, starty - mouse.y) > 20
   ) {
     if (below instanceof Neuron) {
-      below.inputs.push(new Synapse(active, below));
-      active.outputs.push(below);
+      let conn = new Synapse(active, below);
+      synapses.push(conn);
+      below.inputs.push(conn);
+      active.outputs.push(conn);
     } else if (below instanceof Synapse) {
       if (neuromodulation) {
-        active.outputs.push(below);
+        let conn = new Synapse(active, below);
+        synapses.push(conn);
+        active.outputs.push(conn);
       }
     } else {
       let n = new Neuron(mouse.x, mouse.y, e.shiftKey ? -1 : 1);
+      let conn = new Synapse(active, n);
       neurons.push(n);
-      n.inputs.push(new Synapse(active, n));
-      active.outputs.push(n);
+      n.inputs.push(conn);
+      active.outputs.push(conn);
+      synapses.push(conn);
     }
     drawingEdge = false;
   }
@@ -481,6 +460,15 @@ function setActive(newval) {
     sidebar.className = active instanceof Neuron ? "neuron" : "synapse";
   }
 }
+function detectEndpoint(s) {
+  return (
+    s instanceof Neuron ||
+    (s.start != active &&
+      s.end != active &&
+      detectEndpoint(s.start) &&
+      detectEndpoint(s.end))
+  );
+}
 let keysdown = {};
 c.addEventListener("keydown", (e) => {
   const key = e.keyCode ? e.keyCode : e.which;
@@ -499,33 +487,35 @@ c.addEventListener("keydown", (e) => {
     if (key == 8 && active) {
       e.preventDefault();
       if (active instanceof Synapse) {
-        active.start.outputs = active.start.outputs.filter(
-          (o) => o != active.end
-        );
-        active.end.inputs = active.end.inputs.filter(
-          (i) => i.start != active.start
-        );
+        if (active.start.outputs)
+          active.start.outputs = active.start.outputs.filter(
+            (o) => o != active
+          );
+        if (active.end.inputs)
+          active.end.inputs = active.end.inputs.filter((i) => i != active);
         neurons.forEach((n) => {
-          n.outputs = n.outputs.filter((o) => o != active);
+          n.outputs = n.outputs.filter((o) => o.end != active);
         });
+        synapses = synapses.filter((s) => s != active && s.end != active);
         setActive(null);
       } else {
         neurons = neurons.filter((n) => n != active);
+
         active.outputs.forEach((n) => {
-          if (n.inputs) n.inputs = n.inputs.filter((o) => o.start != active);
+          if (n.end instanceof Neuron)
+            n.end.inputs = n.end.inputs.filter((o) => o.start != active);
+        });
+        active.inputs.forEach((n) => {
+          n.start.outputs = n.start.outputs.filter((o) => o.end != active);
         });
 
-        active.inputs.forEach((n) => {
-          n.start.outputs = n.start.outputs.filter((o) => o != active);
-        });
         neurons.forEach((n) => {
-          n.outputs = n.outputs.filter((o) => {
-            return (
-              !(o instanceof Synapse) || (o.end != active && o.start != active)
-            );
-          });
+          n.outputs = n.outputs.filter((o) => detectEndpoint(o));
         });
-        signals = signals.filter((s) => s.end != active && s.start != active);
+
+        synapses = synapses.filter(
+          (s) => detectEndpoint(s) && s.end != active && s.start != active
+        );
 
         setActive(null);
       }
@@ -575,37 +565,32 @@ function quickEncode() {
       }))
     ),
     JSON.stringify(
-      neurons.flatMap((n) =>
-        n.inputs
-          .concat(n.outputs)
-          .filter((x) => x instanceof Synapse)
-          .map((x) => ({ id: x.id, start: x.start.id, end: x.end.id }))
-      )
+      synapses.map((x) => ({ id: x.id, start: x.start.id, end: x.end.id }))
     ),
   ].join("\n");
 }
 function quickDecode(str) {
   let a = str.split("\n");
   let lneurons = JSON.parse(a[0]);
-  neurons = lneurons.map((n) => {
-    const out = new Neuron(n.x, n.y, n.sign, n.id);
-    if (n.graphed) out.createGraph();
-    return out;
-  });
-  let wires = JSON.parse(a[1]).map(
+  neurons = lneurons.map((n) => new Neuron(n.x, n.y, n.sign, n.id));
+  synapses = JSON.parse(a[1]).map(
     (w) =>
       new Synapse(
         neurons.find((n) => n.id == w.start),
-        neurons.find((n) => n.id == w.end),
+        neurons.find((n) => n.id == w.end) || w.end,
         w.id
       )
   );
+  synapses.forEach((s) => {
+    id = Math.max(id, s.id);
+    if (typeof s.end == "number") s.end = synapses.find((w) => w.id == s.end);
+  });
   lneurons.forEach((l, i) => {
+    id = Math.max(id, l.id);
     neurons[i].threshold = l.thresh;
-    neurons[i].outputs = l.outputs.map(
-      (o) => neurons.find((n) => n.id == o) || wires.find((w) => w.id == o)
-    );
-    neurons[i].inputs = l.inputs.map((i) => wires.find((w) => w.id == i));
+    if (l.graphed) neurons[i].createGraph();
+    neurons[i].outputs = l.outputs.map((o) => synapses.find((w) => w.id == o));
+    neurons[i].inputs = l.inputs.map((i) => synapses.find((w) => w.id == i));
   });
 
   setActive(neurons[0]);
@@ -618,10 +603,8 @@ synpaseStrength.onchange = () => {
 
 thresholdIn.onchange = () => {
   if (thresholdIn.value == null) return;
-
   active.threshold =
-    restingPotential +
-    Number(thresholdIn.value) * (threshold - restingPotential);
+    restingPotential + +thresholdIn.value * (threshold - restingPotential);
   console.log(`Changed threshold to ${active.threshold}`);
 };
 
@@ -677,7 +660,7 @@ document.addEventListener("copy", (e) => {
 document.addEventListener("cut", (e) => {
   e.clipboardData.setData("text/plain", quickEncode());
   neurons = [];
-  signals = [];
+  synapses = [];
   id = 0;
   active = null;
   e.preventDefault();
@@ -686,11 +669,10 @@ document.addEventListener("cut", (e) => {
 document.addEventListener("paste", (e) => {
   if (e.clipboardData.types.includes("text/plain")) {
     const data = e.clipboardData.getData("text/plain");
-    console.log(data);
     try {
       quickDecode(data);
     } catch (e) {
-      console.log(e);
+      console.log(data, e);
     }
     e.preventDefault();
   }
