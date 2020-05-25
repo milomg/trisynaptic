@@ -88,7 +88,7 @@ class Synapse {
   }
   fire() {
     if (neuromodulation && this.end instanceof Synapse) {
-      this.end.maxCurrent += maxCurrent * this.start.sign;
+      this.end.maxCurrent += this.maxCurrent * this.start.sign;
       if (this.end == active)
         synpaseStrength.value = this.end.maxCurrent / maxCurrent;
     }
