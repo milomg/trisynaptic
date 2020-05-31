@@ -2,7 +2,6 @@ const thresholdIn = document.getElementById("threshold");
 const sidebar = document.getElementById("sidebar");
 const synpaseStrength = document.getElementById("strength");
 const graphed = document.getElementById("graph-toggle");
-const graphIn = document.getElementById("init-graph");
 let toolbar = document.querySelector(".toolbar");
 let blue = toolbar.firstElementChild;
 let red = blue.nextElementSibling;
@@ -611,10 +610,6 @@ thresholdIn.onchange = () => {
 graphed.onchange = () => {
   if (graphed.checked) active.createGraph();
   else active.deleteGraph();
-};
-
-graphIn.onchange = () => {
-  quickDecode(graphIn.value);
 };
 
 window.onresize = () => {
