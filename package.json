@@ -12,12 +12,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chokidar": "^3.4.0",
-    "esbuild": "^0.4.3",
-    "prettier": "^2.0.5",
+    "chokidar": "^3.5.2",
+    "esbuild": "^0.14.10",
+    "prettier": "^2.5.1",
     "servor": "^4.0.2"
   },
   "devDependencies": {
-    "eslint": "^7.1.0"
+    "eslint": "^8.6.0"
   }
 }

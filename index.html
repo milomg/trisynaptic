@@ -21,22 +21,23 @@
         float: left;
       }
       .modal {
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
-        padding-top: 100px;
         background: rgba(0, 0, 0, 0.25);
         z-index: 1;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh;
+        overflow: scroll;
       }
       .modal-body {
         background-color: #fefefe;
-        position: relative;
-        margin: auto;
         padding: 20px;
         border-radius: 20px;
+        width: 100%;
         max-width: 900px;
+        margin: 100px auto;
+        position: relative;
       }
       .close {
         color: #aaaaaa;
@@ -48,7 +49,6 @@
         text-decoration: none;
         cursor: pointer;
       }
-
       .close:hover,
       .close:focus {
         color: #000;
@@ -161,7 +161,11 @@
           >
           by Neuronify.
         </p>
-        <iframe src="https://drive.google.com/file/d/1LzV0ztmvrVu1SyJLlpgvfJMQ927Wy7li/preview" width="640" height="480"></iframe>
+        <iframe
+          src="https://drive.google.com/file/d/1LzV0ztmvrVu1SyJLlpgvfJMQ927Wy7li/preview"
+          width="640"
+          height="480"
+        ></iframe>
         <p>
           <code>click</code> to create a new neuron<br />
           <code>shift+click</code> to create an inhibitory neuron<br />
